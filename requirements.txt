@@ -1,0 +1,10 @@
+pip install fastapi
+pip install uvicorn
+pip install faster-whisper
+pip install groq
+pip install chromadb
+pip install sounddevice
+pip install numpy
+pip install scipy
+pip install python-dotenv
+pip install requests

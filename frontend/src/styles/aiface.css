@@ -1,0 +1,121 @@
+/* ---------------------------------------------------------------------
+   AIFace styles
+   - Fully responsive: root scales to its container, SVG uses viewBox
+     scaling so the face never distorts.
+   - Transparent-friendly: Background can render with no opaque fill so
+     the component can be composited over a host app (incl. Electron).
+   - GPU accelerated: every animated property below is transform/opacity,
+     never layout-triggering props like width/height/top/left.
+------------------------------------------------------------------------ */
+
+:root {
+  --face-bg: #040912;
+  --face-accent: #4da8ff;
+}
+
+@media (prefers-color-scheme: light) {
+  .aiface-root[data-force-scheme='auto'] {
+    --face-bg: #eef2f7;
+  }
+}
+
+.aiface-root {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  color-scheme: dark;
+  isolation: isolate;
+}
+
+.aiface-background {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 38%, #1a4f8f 0%, #0a1e3a 45%, var(--face-bg) 85%);
+}
+
+.aiface-background--transparent {
+  background: transparent;
+}
+
+.aiface-background__grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(77, 168, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77, 168, 255, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 42%, black 0%, transparent 72%);
+  pointer-events: none;
+}
+
+.aiface-background__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
+.aiface-background__particles {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.aiface-background__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aiface-stage {
+  position: relative;
+  width: 78%;
+  height: 78%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+}
+
+.aiface-svg {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  will-change: transform;
+}
+
+.aiface-glow {
+  position: absolute;
+  inset: -20%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.aiface-glow__layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  filter: blur(18px);
+  will-change: transform, opacity;
+}
+
+/* Respect reduced-motion preferences: keep state changes, drop ambient loops. */
+@media (prefers-reduced-motion: reduce) {
+  .aiface-stage,
+  .aiface-svg,
+  .aiface-glow__layer {
+    animation: none !important;
+    transition: none !important;
+  }
+}
