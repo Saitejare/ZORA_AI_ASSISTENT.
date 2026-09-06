@@ -1,12 +1,20 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-// Vite config. base: './' keeps asset paths relative so the build
-// also works when loaded from a file:// URL inside Electron.
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 export default defineConfig({
     plugins: [react()],
-    base: './',
+    base: "./",
+    server: {
+        host: "127.0.0.1",
+        port: 5173,
+        strictPort: true,
+    },
+    preview: {
+        host: "127.0.0.1",
+        port: 5173,
+        strictPort: true,
+    },
     build: {
-        outDir: 'dist',
-        target: 'es2020',
+        outDir: "dist",
+        target: "es2020",
     },
 });

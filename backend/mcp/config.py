@@ -1,0 +1,5 @@
+MCP_ENABLED = True
+
+MCP_VERSION = "1.0.0"
+
+MCP_NAME = "ZORA MCP"

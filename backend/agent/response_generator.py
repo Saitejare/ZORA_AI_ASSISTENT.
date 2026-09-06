@@ -9,13 +9,14 @@ class ResponseGenerator:
     Converts the execution result into a natural language response.
     """
 
-    def generate(self, result: ExecutionResult) -> str:
+    def generate(self, result):
 
         if result.status == ExecutionStatus.SUCCESS:
 
-            if result.data is not None:
+            if result.data:
+
                 return str(result.data)
 
-            return "Done."
+            return "Task completed successfully."
 
-        return f"Failed: {result.message}"
+        return f"I couldn't complete that: {result.message}"

@@ -1,83 +1,129 @@
-import queue
-from pathlib import Path
-from collections import deque
-import numpy as np
-import sounddevice as sd
-import soundfile as sf
+from __future__ import annotations
 
-from .config import (
-    AUDIO_FILE,
-    CHANNELS,
-    FRAME_DURATION_MS,
-    SAMPLE_RATE,
-    SILENCE_DURATION,
-)
-from .config import (
-    AUDIO_FILE,
-    CHANNELS,
-    FRAME_DURATION_MS,
-    PRE_SPEECH_DURATION,
-    SAMPLE_RATE,
-    SILENCE_DURATION,
-)
-from .vad import VoiceActivityDetector
+import logging
+import threading
+
+import speech_recognition as sr
+
+
+logger = logging.getLogger(__name__)
 
 
 class SpeechRecorder:
+    """
+    Production microphone recorder for ZORA.
+
+    The microphone is initialized once and reused.
+    Ambient-noise calibration is performed only once,
+    which avoids the delay before every request.
+    """
+
     def __init__(self) -> None:
-        self.vad = VoiceActivityDetector()
-        self.frame_size = int(SAMPLE_RATE * FRAME_DURATION_MS / 1000)
-        self.audio_queue: queue.Queue[np.ndarray] = queue.Queue()
 
-    def _callback(self, indata, frames, time, status):
-        if status:
-            print(status)
-        self.audio_queue.put(indata.copy())
+        self.recognizer = sr.Recognizer()
 
-    def record(self) -> Path:
-        recorded_frames = []
-        buffer_size = int(PRE_SPEECH_DURATION * 1000 / FRAME_DURATION_MS)
-        pre_buffer = deque(maxlen=buffer_size)
-        recording = False
-        silence_frames = 0
-        max_silence = int(SILENCE_DURATION * 1000 / FRAME_DURATION_MS)
+        self.recognizer.pause_threshold = 0.8
+        self.recognizer.non_speaking_duration = 0.3
+        self.recognizer.phrase_threshold = 0.2
 
-        print("🎤 Waiting for speech...")
+        self._microphone: sr.Microphone | None = None
+        self._microphone_ready = False
 
-        with sd.InputStream(
-            samplerate=SAMPLE_RATE,
-            channels=CHANNELS,
-            dtype="int16",
-            blocksize=self.frame_size,
-            callback=self._callback,
-        ):
-            while True:
-                frame = self.audio_queue.get()
-                pre_buffer.append(frame)
+        self._lock = threading.Lock()
 
-                speech = self.vad.is_speech(
-                    frame.tobytes(),
-                    SAMPLE_RATE,
+
+    # =====================================================
+    # MICROPHONE INITIALIZATION
+    # =====================================================
+
+    def initialize(self) -> None:
+        """
+        Initialize the microphone once.
+
+        This should happen before ZORA introduces herself.
+        """
+
+        with self._lock:
+
+            if self._microphone_ready:
+                return
+
+            logger.info(
+                "Initializing ZORA microphone..."
+            )
+
+            microphone = sr.Microphone()
+
+            with microphone as source:
+
+                logger.info(
+                    "Calibrating microphone for ambient noise..."
                 )
 
-                if speech:
-                    if not recording:
-                          print("🎙 Recording...")
-                          recording = True
-                          recorded_frames.extend(pre_buffer)
+                self.recognizer.adjust_for_ambient_noise(
+                    source,
+                    duration=0.5,
+                )
 
-                    silence_frames = 0
-                    recorded_frames.append(frame)
+            self._microphone = microphone
+            self._microphone_ready = True
 
-                elif recording:
-                    recorded_frames.append(frame)
-                    silence_frames += 1
+            logger.info(
+                "ZORA microphone ready."
+            )
 
-                    if silence_frames >= max_silence:
-                        print("✅ Recording Finished")
-                        break
 
-        audio = np.concatenate(recorded_frames, axis=0)
-        sf.write(AUDIO_FILE, audio, SAMPLE_RATE)
+    # =====================================================
+    # RECORD
+    # =====================================================
 
-        return AUDIO_FILE
+    def record(self) -> sr.AudioData:
+        """
+        Record one user utterance.
+
+        The microphone must already be initialized.
+        """
+
+        if not self._microphone_ready:
+
+            self.initialize()
+
+        if self._microphone is None:
+
+            raise RuntimeError(
+                "ZORA microphone is not initialized."
+            )
+
+        logger.info(
+            "Microphone ready. Listening for user speech."
+        )
+
+        print("Listening...")
+
+        with self._microphone as source:
+
+            audio = self.recognizer.listen(
+                source,
+                timeout=10,
+                phrase_time_limit=10,
+            )
+
+        logger.info(
+            "Recording finished."
+        )
+
+        print(
+            "Recording finished"
+        )
+
+        return audio
+
+
+    # =====================================================
+    # STATUS
+    # =====================================================
+
+    @property
+    def is_ready(self) -> bool:
+
+        return self._microphone_ready

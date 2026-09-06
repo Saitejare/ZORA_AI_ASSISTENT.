@@ -1,5 +1,6 @@
 from collections import deque
-from typing import Dict, List
+from datetime import datetime, timezone
+from typing import Any, Dict, List
 
 
 class ConversationManager:
@@ -13,21 +14,27 @@ class ConversationManager:
 
         self.history = deque(maxlen=max_history)
 
-    def add_user_message(self, message: str):
+    def add_user_message(self, message: str, memory_references: list[dict[str, Any]] | None = None):
 
         self.history.append(
             {
                 "role": "user",
                 "content": message,
+                "timestamp": self._timestamp(),
+                "tool_calls": [],
+                "memory_references": memory_references or [],
             }
         )
 
-    def add_assistant_message(self, message: str):
+    def add_assistant_message(self, message: str, tool_calls: list[dict[str, Any]] | None = None):
 
         self.history.append(
             {
                 "role": "assistant",
                 "content": message,
+                "timestamp": self._timestamp(),
+                "tool_calls": tool_calls or [],
+                "memory_references": [],
             }
         )
 
@@ -37,6 +44,9 @@ class ConversationManager:
             {
                 "role": "system",
                 "content": message,
+                "timestamp": self._timestamp(),
+                "tool_calls": [],
+                "memory_references": [],
             }
         )
 
@@ -71,3 +81,6 @@ class ConversationManager:
             )
 
         return prompt
+
+    def _timestamp(self) -> str:
+        return datetime.now(timezone.utc).isoformat()

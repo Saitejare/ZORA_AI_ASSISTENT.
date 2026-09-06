@@ -1,16 +1,24 @@
 from backend.agent.orchestrator import Orchestrator
 
-assistant = Orchestrator()
+o = Orchestrator()
+
+print("Orchestrator Ready")
 
 while True:
 
-    query = input("\nYou: ")
+    command = input("\nYou: ")
 
-    if query.lower() in ["exit", "quit"]:
-
+    if command.lower() == "exit":
         break
 
-    reply = assistant.run(query)
+    try:
 
-    print("\nZORA:")
-    print(reply)
+        response = o.run(command)
+
+        print("\nZORA:", response)
+
+    except Exception as e:
+
+        import traceback
+
+        traceback.print_exc()

@@ -1,6 +1,6 @@
 from pathlib import Path
 import shutil
-
+import os
 
 class FileSystemManager:
 
@@ -139,3 +139,21 @@ class FileSystemManager:
                 matches.append(str(file))
 
         return matches
+    def resolve_path(self, path: str):
+
+        desktop = Path.home() / "Desktop"
+        documents = Path.home() / "Documents"
+        downloads = Path.home() / "Downloads"
+
+        path = path.replace("\\", "/")
+
+        if path.startswith("Desktop/"):
+            return desktop / path.replace("Desktop/", "", 1)
+
+        if path.startswith("Documents/"):
+            return documents / path.replace("Documents/", "", 1)
+
+        if path.startswith("Downloads/"):
+            return downloads / path.replace("Downloads/", "", 1)
+
+        return Path(path)

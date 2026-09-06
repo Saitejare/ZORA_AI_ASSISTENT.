@@ -1,0 +1,2 @@
+class AgentNodes:
+    pass

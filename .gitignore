@@ -1,0 +1,13 @@
+.env
+**/.env
+.venv/
+node_modules/
+frontend/node_modules/
+build/
+dist/
+release/
+__pycache__/
+**/__pycache__/
+*.pyc
+backend/browser_profile/
+**/browser_profile/

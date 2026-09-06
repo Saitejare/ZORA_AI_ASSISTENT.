@@ -1,8 +1,11 @@
 import json
-
+import logging
 from .client import GroqClient
 from .config import GROQ_MODEL
-from .prompts import SYSTEM_PROMPT
+from .command_prompt import SYSTEM_PROMPT
+from .chat_prompt import CHAT_PROMPT
+
+logger = logging.getLogger(__name__)
 
 
 class LLMService:
@@ -11,83 +14,196 @@ class LLMService:
 
         self.client = GroqClient()
 
-        self.messages = [
+        # Planner / Command prompt
+        self.command_messages = [
             {
                 "role": "system",
                 "content": SYSTEM_PROMPT,
             }
         ]
 
-    def chat(self, user_message: str, memory_context: str = "") -> str:
+        # Conversation prompt
+        self.chat_messages = [
+            {
+                "role": "system",
+                "content": CHAT_PROMPT,
+            }
+        ]
+
+    # ==========================================================
+    # Generic one-shot generation
+    # Used for intent classification
+    # ==========================================================
+
+    def generate(self, prompt: str) -> str:
+
+        messages = [
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ]
+
+        return self.client.chat(
+            messages,
+            GROQ_MODEL,
+        ).strip()
+
+    # ==========================================================
+    # Natural Conversation
+    # ==========================================================
+
+    def chat(
+        self,
+        user_input: str,
+        memory_context: str = "",
+    ) -> str:
+
+        messages = list(self.chat_messages)
 
         if memory_context:
 
-            self.messages.append(
+            messages.append(
                 {
                     "role": "system",
-                    "content": f"Relevant User Memory:\n{memory_context}",
+                    "content": (
+                        "Relevant User Memory:\n"
+                        f"{memory_context}"
+                    ),
                 }
             )
 
-        self.messages.append(
+        messages.append(
             {
                 "role": "user",
-                "content": user_message,
+                "content": user_input,
             }
         )
 
         response = self.client.chat(
-            self.messages,
+            messages,
             GROQ_MODEL,
+        ).strip()
+
+        # Save conversation history
+
+        self.chat_messages.append(
+            {
+                "role": "user",
+                "content": user_input,
+            }
         )
 
-        self.messages.append(
+        self.chat_messages.append(
             {
                 "role": "assistant",
                 "content": response,
             }
         )
 
+        logger.info("Generated conversational response")
+
         return response
 
-    def generate_command(self, user_input: str):
+    # ==========================================================
+    # Command Generation
+    # ==========================================================
 
-        response = self.chat(user_input).strip()
+    def generate_command(
+        self,
+        user_input: str,
+        memory_context: str = "",
+    ):
+
+        messages = list(self.command_messages)
+
+        if memory_context:
+
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "Relevant User Memory:\n"
+                        f"{memory_context}"
+                    ),
+                }
+            )
+
+        messages.append(
+            {
+                "role": "user",
+                "content": user_input,
+            }
+        )
+
+        response = self.client.chat(
+            messages,
+            GROQ_MODEL,
+        ).strip()
+
+        # Remove markdown code blocks
 
         if response.startswith("```json"):
+
             response = (
-                response.replace("```json", "")
+                response
+                .replace("```json", "")
                 .replace("```", "")
                 .strip()
             )
 
         elif response.startswith("```"):
+
             response = (
-                response.replace("```", "")
+                response
+                .replace("```", "")
                 .strip()
             )
 
-        try:
+        command = json.loads(response)
 
-            command = json.loads(response)
+        logger.info("Generated command from LLM")
 
-            print("\n========== LLM COMMAND ==========")
-            print(command)
-            print("=================================\n")
+        return command
 
-            return command
-
-        except json.JSONDecodeError:
-
-            raise Exception(
-                f"LLM returned invalid JSON:\n{response}"
-            )
+    # ==========================================================
+    # Reset Chat History
+    # ==========================================================
 
     def reset(self):
 
-        self.messages = [
+        self.command_messages = [
             {
                 "role": "system",
                 "content": SYSTEM_PROMPT,
             }
         ]
+
+        self.chat_messages = [
+            {
+                "role": "system",
+                "content": CHAT_PROMPT,
+            }
+        ]
+
+    # ==========================================================
+    # Legacy One Shot
+    # ==========================================================
+
+    def one_shot(self, prompt: str):
+
+        messages = [
+            {
+                "role": "system",
+                "content": CHAT_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ]
+
+        return self.client.chat(
+            messages,
+            GROQ_MODEL,
+        )

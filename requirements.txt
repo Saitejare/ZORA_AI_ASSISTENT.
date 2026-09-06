@@ -1,10 +1,19 @@
-pip install fastapi
-pip install uvicorn
-pip install faster-whisper
-pip install groq
-pip install chromadb
-pip install sounddevice
-pip install numpy
-pip install scipy
-pip install python-dotenv
-pip install requests
+fastapi
+uvicorn
+faster-whisper
+groq
+chromadb
+sounddevice
+soundfile
+SpeechRecognition
+numpy
+scipy
+python-dotenv
+requests
+rapidfuzz
+playwright
+pillow
+pyautogui
+psutil
+pyttsx3
+edge-tts

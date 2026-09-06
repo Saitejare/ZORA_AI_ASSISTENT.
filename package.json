@@ -1,0 +1,55 @@
+{
+  "name": "zora-ai-assistant",
+  "version": "1.0.0",
+  "description": "ZORA AI Desktop Assistant",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "frontend:build": "npm --prefix frontend run build",
+    "backend:build": "pyinstaller --clean --noconfirm zora_backend.spec",
+    "dist": "npm run frontend:build && npm run backend:build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.zora.aiassistant",
+    "productName": "ZORA AI Assistant",
+
+    "directories": {
+      "output": "release"
+    },
+
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*",
+      "package.json"
+    ],
+
+    "extraResources": [
+      {
+        "from": "dist/ZORA-backend.exe",
+        "to": "backend/ZORA-backend.exe"
+      },
+      {
+        "from": ".env",
+        "to": "backend/.env"
+      }
+    ],
+
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icon.ico"
+    },
+
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ZORA AI Assistant"
+    }
+  }
+}

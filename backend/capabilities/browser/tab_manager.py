@@ -10,7 +10,10 @@ class TabManager:
 
         page = self.context.new_page()
 
+        page.bring_to_front()
+
         return page
+
 
     def list_tabs(self):
 

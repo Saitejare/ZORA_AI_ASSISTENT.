@@ -48,9 +48,9 @@ class BrowserService:
 
     def open_url(self, parameters):
 
-        url = parameters["url"]
+        target = parameters["url"]
 
-        return self.browser.open_url(url)
+        return self.browser.open_url(target)
 
     # ----------------------------------------------------
 
@@ -60,7 +60,7 @@ class BrowserService:
 
         engine = parameters.get(
             "engine",
-            "duckduckgo"
+            "google"
         )
 
         return self.browser.search_web(
